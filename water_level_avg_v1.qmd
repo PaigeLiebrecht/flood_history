@@ -1,0 +1,117 @@
+---
+title: "water_level_avg"
+format: html
+editor: visual
+---
+
+## Prep workspace
+
+```{r}
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+
+water_level_raw <- read.csv("ShefHistoric.csv") 
+
+#https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=S&sid=CRVI4&fid=CRVI4
+```
+
+## Prep data
+
+```{r}
+
+glimpse(water_level_raw)
+```
+
+convert to numeric
+
+```{r}
+
+water_level <- water_level_raw %>%
+  mutate(
+    date = as.Date(date, format = "%m/%d/%Y"),
+    elev_ft = as.numeric(elev_ft),
+    year = as.integer(format(date, "%Y")),
+    month = as.integer(format(date, "%m")),
+    elev_m = elev_ft * 0.3048
+  )
+```
+
+Check NAs
+
+```{r}
+
+sum(is.na(water_level$elev_ft))
+
+water_level %>%
+  filter(month >= 3, month <= 7) %>%
+  count(year) %>%
+  arrange(n)
+```
+
+34 NAs. Rerun with warnings suppressed?
+
+```{r}
+
+water_level <- water_level_raw %>%
+  mutate(
+    date    = as.Date(date, format = "%m/%d/%Y"),
+    elev_ft = suppressWarnings(as.numeric(elev_ft)),
+    year    = as.integer(format(date, "%Y")),
+    month   = as.integer(format(date, "%m")),
+    elev_m  = elev_ft * 0.3048
+  )
+```
+
+## Compute yearly seasonal average
+
+Take the months we want, average their values, and collapse them into one value per year
+
+group_by() = "split"
+
+summarise() = "collapse"
+
+.groups = "drop" = "we're done splitting now"
+
+arrange = "put the rows in order by this thing"
+
+```{r}
+
+water_level_avg <- water_level %>%
+  filter(month >= 3, month <= 7) %>%
+  group_by(year) %>%
+  summarise(
+    mar_jul_mean_m = mean(elev_m, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  arrange(year)
+```
+
+## Outputs
+
+```{r}
+
+getwd()
+
+write_csv(
+  water_level_avg,
+  "water_level_avg.csv"
+)
+```
+
+```{r}
+
+ggplot(data = water_level_avg, aes(x = year, y = mar_jul_mean_m)) +
+  geom_line() +
+  coord_cartesian(ylim = c(200, 215)) +
+  labs(
+    x = "Year",
+    y = "Lake level (m)"
+  ) +
+  theme_bw()
+
+```
