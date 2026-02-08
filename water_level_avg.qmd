@@ -15,7 +15,9 @@ library(ggplot2)
 
 ```{r}
 
-water_level_raw <- read.csv("ShefHistoric.csv")
+water_level_raw <- read.csv("ShefHistoric.csv") 
+
+#https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=S&sid=CRVI4&fid=CRVI4
 ```
 
 ## Prep data
